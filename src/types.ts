@@ -40,5 +40,6 @@ declare global {
 			image: string;
 		}
 		loadBase64Image: (image: string) => void;
+		resetStopPoints: () => void;
 	}
 }

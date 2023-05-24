@@ -10,6 +10,8 @@
   let baseRootEl: HTMLDivElement;
   let inputEl: HTMLInputElement;
   let isDragging = false;
+  let stopPoints: [number, number][] = [];
+  let stopPointsLayer: [number, number][] = [];
 
   onMount(() => {
     baseRootEl = document.getElementById("canvas-root") as HTMLDivElement;
@@ -19,9 +21,33 @@
     }
     canvasCtx = canvasElement.getContext("2d");
     inputEl = document.querySelector("#dxdysxsy textarea") as HTMLInputElement;
-    select(canvasElement).call(dragHandler());
+    select(canvasElement).on("dblclick", updateStopPoints).call(dragHandler());
     baseRootEl.loadBase64Image = loadBase64Image;
+    baseRootEl.resetStopPoints = resetStopPoints;
   });
+  function updateStopPoints(event: MouseEvent | PointerEvent) {
+    const rect = canvasElement.getBoundingClientRect();
+    const scaleX = canvasElement.width / rect.width;
+    const scaleY = canvasElement.height / rect.height;
+    const x = event.offsetX * scaleX;
+    const y = event.offsetY * scaleY;
+    const filteredPoints = stopPoints.filter((p) => {
+      return Math.sqrt((p[0] - x) ** 2 + (p[1] - y) ** 2) > 10;
+    });
+    if (filteredPoints.length < stopPoints.length) {
+      stopPoints = filteredPoints;
+    } else {
+      stopPoints = stopPoints.concat([[x, y]]);
+    }
+
+    stopPointsLayer = stopPoints.map((p) => {
+      return [p[0] / canvasElement.width, p[1] / canvasElement.height];
+    });
+  }
+  function resetStopPoints() {
+    stopPoints = [];
+    stopPointsLayer = [];
+  }
   async function loadBase64Image(base64img: string) {
     const img = new Image();
     img.src = base64img;
@@ -60,8 +86,13 @@
       dx = Math.sign(dx) * Math.min(Math.abs(dx), 255);
       dy = Math.sign(dy) * Math.min(Math.abs(dy), 255);
 
-      const value = `${dx},${dy},${sx},${sy}`;
-
+      const value = JSON.stringify({
+        dx,
+        dy,
+        sx,
+        sy,
+        stopPoints,
+      });
       // only update if the distance is greater than 10px
       if (Math.sqrt((lastX - x) ** 2 + (lastY - y) ** 2) > 5) {
         updateElement(value, inputEl);
@@ -95,6 +126,16 @@
     width="256"
     height="256"
   />
+  <div
+    class="absolute top-0 left-0 w-full h-full pointer-events-none touch-events-none"
+  >
+    {#each stopPointsLayer as pt}
+      <div
+        class="absolute w-3 h-3 rounded-full bg-cyan-500 -translate-x-1/2 -translate-y-1/2"
+        style="top: {pt[1] * 100}%; left: {pt[0] * 100}%;"
+      />
+    {/each}
+  </div>
 </div>
 
 <style lang="postcss" scoped>
