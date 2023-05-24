@@ -12,6 +12,7 @@
   let isDragging = false;
   let stopPoints: [number, number][] = [];
   let stopPointsLayer: [number, number][] = [];
+  let lastTouch = 0;
 
   onMount(() => {
     baseRootEl = document.getElementById("canvas-root") as HTMLDivElement;
@@ -21,16 +22,37 @@
     }
     canvasCtx = canvasElement.getContext("2d");
     inputEl = document.querySelector("#dxdysxsy textarea") as HTMLInputElement;
-    select(canvasElement).on("dblclick", updateStopPoints).call(dragHandler());
+    select(canvasElement)
+      .on("dblclick", handleDbClick)
+      .on("touchstart", handleTouch)
+      .call(dragHandler());
     baseRootEl.loadBase64Image = loadBase64Image;
     baseRootEl.resetStopPoints = resetStopPoints;
   });
-  function updateStopPoints(event: MouseEvent | PointerEvent) {
+
+  let lastTap = 0;
+  function handleTouch(event: TouchEvent) {
+    let currentTime = Date.now();
+    if (currentTime - lastTap < 500) {
+      const rect = canvasElement.getBoundingClientRect();
+      const scaleX = canvasElement.width / rect.width;
+      const scaleY = canvasElement.height / rect.height;
+      const x = (event.touches[0].clientX - rect.left) * scaleX;
+      const y = (event.touches[0].clientY - rect.top) * scaleY;
+      updateStopPoints(x, y);
+    }
+    lastTap = currentTime;
+  }
+  function handleDbClick(event: MouseEvent | PointerEvent) {
     const rect = canvasElement.getBoundingClientRect();
     const scaleX = canvasElement.width / rect.width;
     const scaleY = canvasElement.height / rect.height;
     const x = event.offsetX * scaleX;
     const y = event.offsetY * scaleY;
+    updateStopPoints(x, y);
+  }
+
+  function updateStopPoints(x, y) {
     const filteredPoints = stopPoints.filter((p) => {
       return Math.sqrt((p[0] - x) ** 2 + (p[1] - y) ** 2) > 10;
     });
