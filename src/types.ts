@@ -23,9 +23,22 @@ export interface DrawingLayer {
 
 
 declare global {
+
+	interface Event {
+		relatedTarget: EventTarget | null;
+		x: number;
+		y: number;
+		subject: {
+			x: number;
+			y: number;
+		}
+		sourceEvent: PointerEvent | MouseEvent | TouchEvent
+	}
+
 	interface HTMLDivElement {
 		_data: {
 			image: string;
 		}
+		loadBase64Image: (image: string) => void;
 	}
 }

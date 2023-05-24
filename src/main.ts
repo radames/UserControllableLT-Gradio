@@ -1,7 +1,7 @@
 import styles from './app.css?inline'
 import App from './App.svelte'
 
-class FaceCanvas extends HTMLElement {
+class DragGanCanvas extends HTMLElement {
   constructor() {
     super();
   }
@@ -18,4 +18,4 @@ class FaceCanvas extends HTMLElement {
   }
 }
 
-customElements.define("face-canvas", FaceCanvas);
+customElements.define("draggan-canvas", DragGanCanvas);
