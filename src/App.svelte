@@ -12,7 +12,7 @@
   let isDragging = false;
   let stopPoints: [number, number][] = [];
   let stopPointsLayer: [number, number][] = [];
-  let lastTouch = 0;
+  let lastDrag = 0;
 
   onMount(() => {
     baseRootEl = document.getElementById("canvas-root") as HTMLDivElement;
@@ -22,34 +22,18 @@
     }
     canvasCtx = canvasElement.getContext("2d");
     inputEl = document.querySelector("#dxdysxsy textarea") as HTMLInputElement;
-    select(canvasElement)
-      .on("dblclick", handleDbClick)
-      .on("touchstart", handleTouch)
-      .call(dragHandler());
+    select(canvasElement).call(dragHandler());
     baseRootEl.loadBase64Image = loadBase64Image;
     baseRootEl.resetStopPoints = resetStopPoints;
   });
 
   let lastTap = 0;
-  function handleTouch(event: TouchEvent) {
+  function handleDbClick(x, y) {
     let currentTime = Date.now();
     if (currentTime - lastTap < 500) {
-      const rect = canvasElement.getBoundingClientRect();
-      const scaleX = canvasElement.width / rect.width;
-      const scaleY = canvasElement.height / rect.height;
-      const x = (event.touches[0].clientX - rect.left) * scaleX;
-      const y = (event.touches[0].clientY - rect.top) * scaleY;
       updateStopPoints(x, y);
     }
     lastTap = currentTime;
-  }
-  function handleDbClick(event: MouseEvent | PointerEvent) {
-    const rect = canvasElement.getBoundingClientRect();
-    const scaleX = canvasElement.width / rect.width;
-    const scaleY = canvasElement.height / rect.height;
-    const x = event.offsetX * scaleX;
-    const y = event.offsetY * scaleY;
-    updateStopPoints(x, y);
   }
 
   function updateStopPoints(x, y) {
@@ -90,6 +74,7 @@
       lastY = y;
 
       isDragging = true;
+      handleDbClick(x, y);
     }
     function dragged(event: Event) {
       const rect = canvasElement.getBoundingClientRect();
@@ -109,18 +94,23 @@
       dy = Math.sign(dy) * Math.min(Math.abs(dy), 255);
 
       const value = JSON.stringify({
-        dx,
-        dy,
-        sx,
-        sy,
-        stopPoints,
+        dx: ~~dx,
+        dy: ~~dy,
+        sx: ~~sx,
+        sy: ~~sy,
+        stopPoints: stopPoints.map((p) => [~~p[0], ~~p[1]]),
       });
       // only update if the distance is greater than 10px
-      if (Math.sqrt((lastX - x) ** 2 + (lastY - y) ** 2) > 5) {
+      let currentTime = Date.now();
+      if (
+        Math.sqrt((lastX - x) ** 2 + (lastY - y) ** 2) > 5 &&
+        currentTime - lastDrag > 100
+      ) {
         updateElement(value, inputEl);
-        console.log("dragged", value);
         lastX = x;
         lastY = y;
+        console.log("draged", value);
+        lastDrag = currentTime;
       }
     }
 
